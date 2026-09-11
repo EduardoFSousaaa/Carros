@@ -1,0 +1,31 @@
+# Ambientes Virtuais (Python Virtual Environments)
+.venv/
+venv/
+ENV/
+env/
+
+# Byte-compiled / arquivos otimizados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Banco de dados local (Para não apagar seus testes locais no servidor)
+db.sqlite3
+db.sqlite3-journal
+
+# Configurações do VS Code ou editores
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de log e cache
+*.log
+.cache/

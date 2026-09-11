@@ -46,16 +46,16 @@ def adicionar_veiculo_api(request):
             
     return JsonResponse({'status': 'erro', 'mensagem': 'Método não permitido'}, status=405)
 @csrf_exempt 
-def remover_veiculo_api(request, id):
+def remover_veiculo_api(request, veiculo_id):
     if request.method == 'DELETE':
         try:
-            veiculo = Veiculo.objects.get(id=id)
+            veiculo = Veiculo.objects.get(id=veiculo_id)
             veiculo.delete()
             return JsonResponse({'status': 'sucesso', 'mensagem': 'Veículo removido!'})
         except Veiculo.DoesNotExist:
             return JsonResponse({'status': 'erro', 'mensagem': 'Veículo não encontrado'}, status=404)
     return JsonResponse({'status': 'erro', 'mensagem': 'Método não permitido'}, status=405)
-def ocupar_vaga_api(request, id):
+def ocupar_vaga_api(request, veiculo_id):
  if request.method == 'POST':
     try:
         dados = json.loads(request.body)
@@ -76,7 +76,7 @@ def ocupar_vaga_api(request, id):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'erro', 'mensagem': 'JSON inválido'}, status=400)       
     return JsonResponse({'status': 'erro', 'mensagem': 'Método não permitido'}, status=405)
-def liberar_vaga_api(request, id):
+def liberar_vaga_api(request, veiculo_id):
     # Lógica para liberar uma vaga ocupada com o ID fornecido
     pass
 def listar_vagas_ocupadas_api(request):

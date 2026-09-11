@@ -141,26 +141,65 @@ async function adicionarVeiculo() {
     } catch (erro) {
         console.error("Erro ao salvar veículo:", erro);
     }
-    async function deletarVeiculo(id) {
-         console.log("-> O botão de deletar foi clicado para o ID:", id);
-        try {
-            const resposta = await fetch(`/api/veiculos/deletar/${id}/`, {
-                method: 'DELETE'
-            });
+}
+async function deletarVeiculo(id) {
+        console.log("-> O botão de deletar foi clicado para o ID:", id);
+    try {
+        const resposta = await fetch(`/api/veiculos/deletar/${id}/`, {
+            method: 'DELETE'
+        });
 
-            const resultado = await resposta.json();
-            
-            if (resultado.status === 'sucesso') {
-                alert(resultado.mensagem);
-                // Atualiza a tabela após deletar o veículo
-                carregarVeiculos();
-            } else {
-                alert("Erro: " + resultado.mensagem);
-            }
-        } catch (erro) {
-            console.error("Erro ao deletar veículo:", erro);
+        const resultado = await resposta.json();
+        
+        if (resultado.status === 'sucesso') {
+            alert(resultado.mensagem);
+            // Atualiza a tabela após deletar o veículo
+            carregarVeiculos();
+        } else {
+            alert("Erro: " + resultado.mensagem);
         }
+    } catch (erro) {
+        console.error("Erro ao deletar veículo:", erro);
+    }
 
+}
+// Função auxiliar para obter o cookie CSRF padrão do Django
+function obterCookie(nome) {
+    let valorCookie = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, nome.length + 1) === (nome + '=')) {
+                valorCookie = decodeURIComponent(cookie.substring(nome.length + 1));
+                break;
+            }
+        }
+    }
+    return valorCookie;
+}
+
+async function enviarParaDjango() {
+    const csrftoken = obterCookie('csrftoken');
+    const dadosEnvio = { nome: "Lucas" };
+
+    try {
+        const resposta = await fetch("/api/mensagem/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken // Obrigatório para requisições POST no Django
+            },
+            body: JSON.stringify(dadosEnvio)
+        });
+
+        const resultado = await resposta.json();
+        console.log(resultado);
+    } catch (erro) {
+        console.error("Erro na requisição:", erro);
     }
 }
+
+enviarParaDjango();
+
 </script>
