@@ -1,0 +1,166 @@
+<!-- Seus inputs e tabela estruturados -->
+<div>
+    <input type="text" id="placa" placeholder="Placa">
+    <input type="text" id="modelo" placeholder="Modelo">
+    <button onclick="adicionarVeiculo()">Adicionar Veículo</button>
+</div>
+
+<table border="1" style="margin-top: 20px; width: 100%; text-align: left;">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Placa</th>
+            <th>Modelo</th>
+        </tr>
+    </thead>
+    <tbody id="tabela-veiculos">
+        <!-- Os dados do banco vão aparecer aqui -->
+    </tbody>
+</table>
+
+<script>
+// Executa automaticamente ao carregar a página para trazer os dados do banco
+document.addEventListener("DOMContentLoaded", carregarVeiculos);
+
+// 1. FUNÇÃO PARA LISTAR (GET)
+async function carregarVeiculos() {
+    try {
+        const resposta = await fetch('/api/veiculos/');
+        const dados = await resposta.json();
+        
+        if (dados.status === 'sucesso') {
+            const tbody = document.getElementById('tabela-veiculos');
+            tbody.innerHTML = ''; // Limpa a tabela antes de renderizar
+
+            dados.veiculos.forEach(veiculo => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${veiculo.id}</td>
+                        <td>${veiculo.placa}</td>
+                        <td>${veiculo.modelo}</td>
+                        <td>
+                            <!-- <button onclick="editarVeiculo(${veiculo.id})">Editar</button> -->
+                           <button class="btn-deletar" data-id="${veiculo.id}">Excluir</button>
+                    </tr>
+                `;
+            });
+            atrelarEventosDeClique();
+        }
+    } catch (erro) {
+        console.error("Erro ao buscar veículos:", erro);
+    }
+}
+
+function atrelarEventosDeClique() {
+    const botoes = document.querySelectorAll('.btn-deletar');
+    
+    botoes.forEach(botao => {
+        botao.onclick = function() {
+            // Pega o ID que guardamos no atributo 'data-id'
+            const idVeiculo = this.getAttribute('data-id');
+            // Dispara a função de deletar passando o ID correto
+            deletarVeiculo(idVeiculo);
+        };
+    });
+}
+
+async function ocuparVaga(id) {
+    try {
+        const resposta = await fetch(`/api/vagas/ocupar/${id}/`, {
+            method: 'POST'
+        });
+
+        const resultado = await resposta.json();
+        
+        if (resultado.status === 'sucesso') {
+            alert(resultado.mensagem);
+            // Atualiza a tabela após ocupar a vaga
+            listarVagas();
+        } else {
+            alert("Erro: " + resultado.mensagem);
+        }
+    } catch (erro) {
+        console.error("Erro ao ocupar vaga:", erro);
+    }
+}
+async function listarVagas() {
+    try {
+        const resposta = await fetch('/api/vagas/');
+        const dados = await resposta.json();
+        
+        if (dados.status === 'sucesso') {
+            const tbody = document.getElementById('VagaOcupada');
+            tbody.innerHTML = ''; // Limpa a tabela antes de renderizar
+
+            dados.vagas.forEach(vaga => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${vaga.id}</td>
+                        <td>${vaga.numero}</td>
+                        <td>${vaga.ocupada ? 'Sim' : 'Não'}</td>
+                        <td>${vaga.data_entrada || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (erro) {
+        console.error("Erro ao buscar vagas:", erro);
+    }
+}
+// 2. FUNÇÃO PARA ADICIONAR (POST)
+async function adicionarVeiculo() {
+    const placaInput = document.getElementById('placa').value;
+    const modeloInput = document.getElementById('modelo').value;
+
+    const corpoRequisicao = {
+        placa: placaInput,
+        modelo: modeloInput
+    };
+
+    try {
+        const resposta = await fetch('/api/veiculos/adicionar/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(corpoRequisicao)
+        });
+
+        const resultado = await resposta.json();
+        
+        if (resultado.status === 'sucesso') {
+            alert(resultado.mensagem);
+            // Limpa os campos do formulário
+            document.getElementById('placa').value = '';
+            document.getElementById('modelo').value = '';
+            // Atualiza a tabela com o novo dado do banco
+            carregarVeiculos();
+        } else {
+            alert("Erro: " + resultado.mensagem);
+        }
+    } catch (erro) {
+        console.error("Erro ao salvar veículo:", erro);
+    }
+    async function deletarVeiculo(id) {
+         console.log("-> O botão de deletar foi clicado para o ID:", id);
+        try {
+            const resposta = await fetch(`/api/veiculos/deletar/${id}/`, {
+                method: 'DELETE'
+            });
+
+            const resultado = await resposta.json();
+            
+            if (resultado.status === 'sucesso') {
+                alert(resultado.mensagem);
+                // Atualiza a tabela após deletar o veículo
+                carregarVeiculos();
+            } else {
+                alert("Erro: " + resultado.mensagem);
+            }
+        } catch (erro) {
+            console.error("Erro ao deletar veículo:", erro);
+        }
+
+    }
+}
+</script>

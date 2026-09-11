@@ -1,0 +1,26 @@
+MeuProjeto/
+│
+├── Carro/                      # Pasta de configuração do projeto
+│   ├── __init__.py
+│   ├── settings.py
+│   └── urls.py
+│
+├── veiculos/                   # Seu aplicativo de veículos
+│   ├── migrations/
+│   ├── templates/
+│   │   └── home.html           # Seus arquivos HTML/Frontend
+│   │
+│   ├── views/                  # 📂 PASTA DAS VIEWS (Substitui o views.py)
+│   │   ├── __init__.py         # 📄 Arquivo obrigatório (pode ficar vazio)
+│   │   ├── paginas.py          # 📄 Views que renderizam HTML (ex: home)
+│   │   ├── api_veiculos.py     # 📄 Views/APIs de Veículos (Listar, Adicionar)
+│   │   └── api_vagas.py        # 📄 Views/APIs de Vagas (Ocupar, Liberar)
+│   │
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py               # Onde ficam o Veiculo e VagaOcupada
+│   ├── urls.py                 # Rotas do aplicativo
+│   └── tests.py
+│
+└── manage.py
