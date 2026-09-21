@@ -21,6 +21,7 @@ class Veiculo(models.Model):
         return self.modelo
 
 class VagaOcupada(models.Model):
+    id = models.AutoField(primary_key=True)
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE)
     data_entrada = models.DateTimeField(auto_now_add=True)
 

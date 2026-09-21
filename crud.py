@@ -73,9 +73,10 @@ def ocuparVaga():
             data_entrada=data
         )
 
-        print("Vaga ocupada!")
+        print("Vaga ocupada!modelo: {0} - placa: {1} - data: {2}".format(veiculo.modelo, veiculo.placa, data))
     else:
         print("Não há vagas disponíveis.")
+
 def verificarExistemVagaLivre():
     VAGAS_TOTAIS = 10
     intVagasOcupadas = VagaOcupada.objects.all().count()

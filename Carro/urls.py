@@ -24,10 +24,13 @@ urlpatterns = [
  path('admin/', admin.site.urls),
  # path('', include('veiculos.urls')),
     path('', views.home, name='veiculos'), # Abre a página inicial
-    path('api/veiculos/', views.listar_veiculos_api, name='listar_veiculos'),
     path('api/veiculos/adicionar/', views.adicionar_veiculo_api, name='adicionar_veiculo'),
     path('api/veiculos/deletar/<int:veiculo_id>/', views.remover_veiculo_api, name='deletar_veiculo'),
-    path('api/vagas/ocupar/<int:id>/', views.ocupar_vaga_api, name='ocupar_vaga'),
-    path('api/vagas/liberar/<int:id>/', views.liberar_vaga_api, name='liberar_vaga'),
+    path('api/vagas/ocupar/<int:veiculo_id>/', views.ocupar_vaga_api, name='ocupar_vaga'),
+    path('api/vagas/liberar/<int:vaga_id>/', views.liberar_vaga_api, name='liberar_vaga'),
     path('api/vagas/ocupadas/', views.listar_vagas_ocupadas_api, name='listar_vagas_ocupadas'),
+    # 📊 API de Leitura (Esta é a rota que o JavaScript deve chamar)
+    path('api/estacionamento/dados/', views.listar_estacionamento_api, name='listar_estacionamento_api'),
+    # 🚗 API de Ações (Formulário Salvar e Botão Liberar)
+    path('api/estacionamento/liberar-vaga/<int:vaga_id>/', views.liberar_vaga_api, name='liberar_vaga_api'),
 ]

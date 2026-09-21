@@ -1,205 +1,275 @@
-<!-- Seus inputs e tabela estruturados -->
-<div>
-    <input type="text" id="placa" placeholder="Placa">
-    <input type="text" id="modelo" placeholder="Modelo">
-    <button onclick="adicionarVeiculo()">Adicionar Veículo</button>
-</div>
-
-<table border="1" style="margin-top: 20px; width: 100%; text-align: left;">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Placa</th>
-            <th>Modelo</th>
-        </tr>
-    </thead>
-    <tbody id="tabela-veiculos">
-        <!-- Os dados do banco vão aparecer aqui -->
-    </tbody>
-</table>
-
-<script>
-// Executa automaticamente ao carregar a página para trazer os dados do banco
-document.addEventListener("DOMContentLoaded", carregarVeiculos);
-
-// 1. FUNÇÃO PARA LISTAR (GET)
-async function carregarVeiculos() {
-    try {
-        const resposta = await fetch('/api/veiculos/');
-        const dados = await resposta.json();
-        
-        if (dados.status === 'sucesso') {
-            const tbody = document.getElementById('tabela-veiculos');
-            tbody.innerHTML = ''; // Limpa a tabela antes de renderizar
-
-            dados.veiculos.forEach(veiculo => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${veiculo.id}</td>
-                        <td>${veiculo.placa}</td>
-                        <td>${veiculo.modelo}</td>
-                        <td>
-                            <!-- <button onclick="editarVeiculo(${veiculo.id})">Editar</button> -->
-                           <button class="btn-deletar" data-id="${veiculo.id}">Excluir</button>
-                    </tr>
-                `;
-            });
-            atrelarEventosDeClique();
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Veículos - Estacionamento</title>
+    <!-- Bootstrap 5.3.0 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
         }
-    } catch (erro) {
-        console.error("Erro ao buscar veículos:", erro);
-    }
-}
-
-function atrelarEventosDeClique() {
-    const botoes = document.querySelectorAll('.btn-deletar');
-    
-    botoes.forEach(botao => {
-        botao.onclick = function() {
-            // Pega o ID que guardamos no atributo 'data-id'
-            const idVeiculo = this.getAttribute('data-id');
-            // Dispara a função de deletar passando o ID correto
-            deletarVeiculo(idVeiculo);
-        };
-    });
-}
-
-async function ocuparVaga(id) {
-    try {
-        const resposta = await fetch(`/api/vagas/ocupar/${id}/`, {
-            method: 'POST'
-        });
-
-        const resultado = await resposta.json();
-        
-        if (resultado.status === 'sucesso') {
-            alert(resultado.mensagem);
-            // Atualiza a tabela após ocupar a vaga
-            listarVagas();
-        } else {
-            alert("Erro: " + resultado.mensagem);
+        .vaga-card {
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-    } catch (erro) {
-        console.error("Erro ao ocupar vaga:", erro);
-    }
-}
-async function listarVagas() {
-    try {
-        const resposta = await fetch('/api/vagas/');
-        const dados = await resposta.json();
-        
-        if (dados.status === 'sucesso') {
-            const tbody = document.getElementById('VagaOcupada');
-            tbody.innerHTML = ''; // Limpa a tabela antes de renderizar
-
-            dados.vagas.forEach(vaga => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${vaga.id}</td>
-                        <td>${vaga.numero}</td>
-                        <td>${vaga.ocupada ? 'Sim' : 'Não'}</td>
-                        <td>${vaga.data_entrada || 'N/A'}</td>
-                    </tr>
-                `;
-            });
+        .vaga-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
         }
-    } catch (erro) {
-        console.error("Erro ao buscar vagas:", erro);
-    }
-}
-// 2. FUNÇÃO PARA ADICIONAR (POST)
-async function adicionarVeiculo() {
-    const placaInput = document.getElementById('placa').value;
-    const modeloInput = document.getElementById('modelo').value;
+    </style>
+</head>
+<body>
 
-    const corpoRequisicao = {
-        placa: placaInput,
-        modelo: modeloInput
-    };
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-p-circle-fill me-2 text-primary"></i>
+                Sistema Carro - Gestão de Estacionamento
+            </a>
+        </div>
+    </nav>
 
-    try {
-        const resposta = await fetch('/api/veiculos/adicionar/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(corpoRequisicao)
-        });
+    <div class="container pb-5">
+        <h1 class="mb-2 fw-bold text-dark">Painel de Veículos</h1>
+        <p class="text-secondary mb-4 fs-5">
+            Vagas Preenchidas: <span id="total-ocupadas" class="badge bg-primary">0</span> / <span class="badge bg-secondary">10</span>
+        </p>
 
-        const resultado = await resposta.json();
+        <!-- Formulário Cadastrar Novo Veículo (Salvar envia direto para a lista) -->
+        <div class="card mb-5 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-3 fw-semibold"><i class="bi bi-plus-circle me-2 text-primary"></i>Cadastrar e Estacionar Veículo</h4>
+                <form id="form-veiculo">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="placa" class="form-label small fw-bold text-secondary">Placa do Veículo</label>
+                            <input type="text" id="placa" class="form-control form-control-lg" placeholder="Ex: ABC1D23" required maxlength="7" style="text-transform: uppercase;">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="modelo" class="form-label small fw-bold text-secondary">Modelo / Marca</label>
+                            <input type="text" id="modelo" class="form-control form-control-lg" placeholder="Ex: Toyota Corolla" required>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
+                                <i class="bi bi-save me-2"></i>Salvar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Seção do Grid de Vagas (Tabela 2 na View) -->
+        <div class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold m-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Vagas Ocupadas Atualmente (Mapa do Pátio)</h4>
+                <!-- Legenda -->
+                <div class="d-flex gap-3 small">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="badge bg-success p-1">&nbsp;</span> <span>Livre</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="badge bg-danger p-1">&nbsp;</span> <span>Ocupada</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grid de 10 vagas fixas controlado dinamicamente -->
+            <div id="grid-estacionamento" class="row row-cols-2 row-cols-sm-3 row-cols-md-5 g-3">
+                <!-- Preenchido automaticamente via JavaScript de 1 a 10 -->
+            </div>
+        </div>
+
+        <!-- Seção do Histórico Geral (Tabela 1 na View) -->
+        <div>
+            <h4 class="mb-3 fw-semibold"><i class="bi bi-card-list me-2 text-primary"></i>Todos os Veículos Cadastrados no Sistema</h4>
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-secondary small fw-bold text-uppercase">
+                            <tr>
+                                <th class="ps-4">ID</th>
+                                <th>Placa</th>
+                                <th>Modelo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-todos-veiculos">
+                            <!-- Preenchido dinamicamente via JS -->
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-secondary">Nenhum veículo cadastrado no momento.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Exemplo colocando no final do body -->
+    <script src="static/veiculos/js/script.js"></script>
+
+    <!-- Lógica de Frontend Integrada -->
+    <script>
         
-        if (resultado.status === 'sucesso') {
-            alert(resultado.mensagem);
-            // Limpa os campos do formulário
-            document.getElementById('placa').value = '';
-            document.getElementById('modelo').value = '';
-            // Atualiza a tabela com o novo dado do banco
+        document.addEventListener("DOMContentLoaded", () => {
             carregarVeiculos();
-        } else {
-            alert("Erro: " + resultado.mensagem);
-        }
-    } catch (erro) {
-        console.error("Erro ao salvar veículo:", erro);
-    }
-}
-async function deletarVeiculo(id) {
-        console.log("-> O botão de deletar foi clicado para o ID:", id);
-    try {
-        const resposta = await fetch(`/api/veiculos/deletar/${id}/`, {
-            method: 'DELETE'
+            
+            // Ouvinte do formulário para salvar veículo
+            document.getElementById('form-veiculo').addEventListener('submit', salvarVeiculo);
         });
 
-        const resultado = await resposta.json();
-        
-        if (resultado.status === 'sucesso') {
-            alert(resultado.mensagem);
-            // Atualiza a tabela após deletar o veículo
-            carregarVeiculos();
-        } else {
-            alert("Erro: " + resultado.mensagem);
-        }
-    } catch (erro) {
-        console.error("Erro ao deletar veículo:", erro);
-    }
+        // URL da sua view do Django (Ajuste se o caminho da URL for diferente)
+        const API_URL = 'api/estacionamento/dados/'; 
+        const SAVE_URL = '/api/veiculos/adicionar/';
 
-}
-// Função auxiliar para obter o cookie CSRF padrão do Django
-function obterCookie(nome) {
-    let valorCookie = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, nome.length + 1) === (nome + '=')) {
-                valorCookie = decodeURIComponent(cookie.substring(nome.length + 1));
-                break;
+        function carregarDadosEstacionamento() {
+            fetch(API_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'sucesso') {
+                        renderizarTabelaTodos(data.todos_veiculos);
+                        renderizarGridVagas(data.vagas_ocupadas);
+                    } else {
+                        console.error("Erro ao carregar dados da API");
+                    }
+                })
+                .catch(error => console.error("Erro na requisição:", error));
+        }
+
+        // 1. Renderiza a Tabela 1: Todos os veículos cadastrados no sistema
+        function renderizarTabelaTodos(veiculos) {
+            const tabelaTodos = document.getElementById('tabela-todos-veiculos');
+            
+            if (!veiculos || veiculos.length === 0) {
+                tabelaTodos.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-secondary">Nenhum veículo cadastrado no momento.</td></tr>`;
+                return;
             }
+
+            tabelaTodos.innerHTML = veiculos.map(v => `
+                <tr>
+                    <td class="ps-4 fw-semibold text-secondary">#${v.id}</td>
+                    <td><span class="badge bg-dark font-monospace fs-6 px-3">${v.placa.toUpperCase()}</span></td>
+                    <td class="text-dark fw-medium">${v.modelo}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deletarVeiculo(${v.id})">
+                            <i class="bi bi-trash"></i> Deletar Veiculo
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="ocuparVaga(${v.id})">
+                            <i class="bi bi-car-front-fill"></i> Ocupar Vaga
+                        </button>
+                    </td>
+                    
+                </tr>
+            `).join('');
         }
-    }
-    return valorCookie;
-}
 
-async function enviarParaDjango() {
-    const csrftoken = obterCookie('csrftoken');
-    const dadosEnvio = { nome: "Lucas" };
+        // 2. Renderiza a Tabela 2 / Grid: Estado das 10 vagas físicas do pátio
+        function renderizarGridVagas(vagasOcupadas) {
+            const grid = document.getElementById('grid-estacionamento');
+            const totalOcupadasBadge = document.getElementById('total-ocupadas');
+            grid.innerHTML = '';
 
-    try {
-        const resposta = await fetch("/api/mensagem/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrftoken // Obrigatório para requisições POST no Django
-            },
-            body: JSON.stringify(dadosEnvio)
-        });
+            // Mapeia o array de vagas ocupadas indexando pelo número da vaga para busca rápida
+            const mapaVagas = {};
+            vagasOcupadas.forEach(vaga => {
+                mapaVagas[vaga.numero_vaga] = vaga;
+            });
 
-        const resultado = await resposta.json();
-        console.log(resultado);
-    } catch (erro) {
-        console.error("Erro na requisição:", erro);
-    }
-}
+            let totalOcupadas = 0;
 
-enviarParaDjango();
+            // Gera as 10 vagas físicas fixas exigidas pelo layout
+            for (let i = 1; i <= 10; i++) {
+                const vagaOcupada = mapaVagas[i];
 
-</script>
+                if (vagaOcupada) {
+                    totalOcupadas++;
+                    // Renderiza CARD VERMELHO (Ocupado)
+                    grid.innerHTML += `
+                        <div class="col">
+                            <div class="card vaga-card text-center bg-danger text-white border-0 h-100 shadow-sm">
+                                <div class="card-body py-4">
+                                    <h5 class="card-title mb-1 fw-bold">Vaga ${String(i).padStart(2, '0')}</h5>
+                                    <i class="bi bi-car-front-fill display-5 my-2 d-block"></i>
+                                    <span class="badge bg-white text-danger font-monospace mb-1">${vagaOcupada.placa}</span>
+                                    <p class="card-text small text-white-50 m-0">${vagaOcupada.modelo}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Renderiza CARD VERDE (Livre)
+                    grid.innerHTML += `
+                        <div class="col">
+                            <div class="card vaga-card text-center bg-success text-white border-0 h-100 shadow-sm">
+                                <div class="card-body py-4 d-flex flex-column justify-content-center align-items-center">
+                                    <h5 class="card-title mb-1 fw-bold">Vaga ${String(i).padStart(2, '0')}</h5>
+                                    <i class="bi bi-p-circle display-5 my-2 d-block"></i>
+                                    <p class="card-text small text-white-50 m-0">Disponível</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            totalOcupadasBadge.innerText = totalOcupadas;
+        }
+
+        // Envia os dados do formulário para salvar um novo veículo
+        function salvarVeiculo(event) {
+            event.preventDefault();
+            
+            const placaInput = document.getElementById('placa').value.trim();
+            const modeloInput = document.getElementById('modelo').value.trim();
+
+            const dados = {
+                placa: placaInput,
+                modelo: modeloInput
+            };
+
+            // Envio via POST em formato JSON para a sua view de salvamento no Django
+            fetch(SAVE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') // Pega o token CSRF padrão do Django
+                },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'sucesso') {
+                    document.getElementById('form-veiculo').reset();
+                    carregarDadosEstacionamento(); // Recarrega as duas tabelas de forma assíncrona
+                } else {
+                    alert('Erro ao salvar veículo: ' + (data.mensagem || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => console.error("Erro ao enviar dados:", error));
+        }
+
+        // Função utilitária para capturar o Token CSRF do Django nos cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
