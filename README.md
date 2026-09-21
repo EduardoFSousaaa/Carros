@@ -7,6 +7,5 @@ vaga ocupada pela metade a implementação , zero testes ainda.
 
 Criado requeremets ok
 
-banco.db
-
-![alt text](image.png)
+Versão final da primeira aula completa.
+![alt text](PainelVeiculos.png)
